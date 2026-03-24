@@ -36,9 +36,11 @@
     #plan-content h2 { font-size: 16px; color: #667eea; margin: 20px 0 10px; border-bottom: 1px solid #222; padding-bottom: 4px; }
     #plan-content h3 { font-size: 14px; color: #a0a0c0; margin: 12px 0 6px; }
     #plan-content ul { padding-left: 20px; }
+    #plan-content ol { padding-left: 20px; }
     .error-msg { background: #1a0a0a; border: 1px solid #3a1010; border-radius: 10px; padding: 16px; color: #e88; text-align: center; }
     footer { text-align: center; color: #444; font-size: 12px; margin-top: 40px; }
     footer a { color: #667eea; text-decoration: none; }
+    .loading-tip { text-align: center; color: #666; font-size: 13px; padding: 12px; }
     @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .card { padding: 20px; } }
   </style>
 </head>
@@ -72,11 +74,12 @@
         </div>
         <div class="form-group">
           <label>特别要求（可选）</label>
-          <textarea id="focus" placeholder="例如：重点讲实操案例、要有观众连麦环节"></textarea>
+          <textarea id="focus" placeholder="例如：重点讲实操案例、要有观众连麦环节、要有PPT演示"></textarea>
         </div>
         <button type="submit" class="btn" id="submit-btn">
           <span id="btn-text">✨ 开始生成策划方案</span>
         </button>
+        <div class="loading-tip" id="loading-tip" style="display:none">AI 正在思考中，预计需要 15~25 秒，请稍候...</div>
       </form>
     </div>
 
@@ -99,110 +102,290 @@
     const resultDiv = document.getElementById('result');
     const planContent = document.getElementById('plan-content');
     const copyBtn = document.getElementById('copy-btn');
+    const loadingTip = document.getElementById('loading-tip');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const topic = document.getElementById('topic').value.trim();
       const audience = document.getElementById('audience').value.trim();
-      const duration = document.getElementById('duration').value;
+      const duration = parseInt(document.getElementById('duration').value);
       const focus = document.getElementById('focus').value.trim();
 
       if (!topic) { alert('请输入直播主题'); return; }
 
       submitBtn.disabled = true;
-      btnText.innerHTML = '<span class="spinner"></span>策划中，请稍候...';
+      btnText.innerHTML = '<span class="spinner"></span>策划中...';
+      loadingTip.style.display = 'block';
       resultDiv.classList.remove('show');
 
-      const prompt = `你是一位资深的直播策划专家，擅长为主播和运营团队策划高质量的技术直播。
+      const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
 
-请为以下直播生成一份完整的策划方案：
+      const prompt = `你是 InfoQ 中国区资深直播策划编辑，拥有 8 年科技直播运营经验，曾策划超过 500 场技术直播，擅长将复杂的技术主题转化为结构清晰、互动性强、商业价值高的直播内容。
+
+## 任务
+为以下直播生成一份专业级完整策划方案，输出质量应达到可以直接交给团队执行的标准。
 
 **主题**：${topic}
 **目标受众**：${audience || '技术从业者、开发者、AI 爱好者'}
 **直播时长**：${duration} 分钟
 **特别要求**：${focus || '无'}
 
-请生成以下内容，用 Markdown 格式返回（不要用代码块包裹，直接输出 Markdown）：
+## 输出要求
 
-# 🎙️ 直播策划方案
-
-## 📌 基本信息
-- **主题**：${topic}
-- **目标受众**：${audience || '技术从业者、开发者、AI 爱好者'}
-- **直播时长**：${duration} 分钟
-- **策划时间**：${new Date().toLocaleDateString('zh-CN')}
+严格按照以下完整格式输出所有内容，不要省略任何部分，内容要充实、有深度、可执行性强：
 
 ---
 
-## 🎯 直播目标
+# 🎙️ 【${topic}】直播策划方案
+
+## 一、直播概述
+
+| 项目 | 内容 |
+|------|------|
+| 直播主题 | ${topic} |
+| 目标受众 | ${audience || '技术从业者、开发者、AI 爱好者'} |
+| 直播时长 | ${duration} 分钟 |
+| 目标观看量 | 引导至 500~2000 人 |
+| 预期互动率 | 3%~8% |
+| 策划时间 | ${today} |
+
+**一句话简介**：（用一句吸引人的话概括这场直播的核心价值，20字以内）
+
+---
+
+## 二、直播核心价值主张（3条）
+
+为什么观众要来看这场直播？用一句话分别说明 3 个核心价值：
+
+1. **对行业的意义**：
+2. **对观众的好处**：
+3. **不可错过的理由**：
+
+---
+
+## 三、详细直播大纲
+
+请为 ${duration} 分钟的直播规划以下环节，每个环节必须包含：时长、具体内容、主讲人动作、观众预期反应：
+
+### 🕐 开场（${Math.round(duration * 0.05)} 分钟）
+
+**目标**：留住前 30 秒，建立期待感
+
+- 【${Math.round(duration * 0.05)}:00 - ${Math.round(duration * 0.05)}:${String(Math.round(duration * 0.05 * 0.6)).padStart(2,'0')}】
+  - 主讲动作：
+  - 屏幕呈现：
+  - 互动设计：
+
+### 📖 环节一：${topic} 的前世今生（${Math.round(duration * 0.2)} 分钟）
+
+**目标**：建立背景，激发兴趣
+
+- 【${Math.round(duration * 0.05)}:${String(Math.round(duration * 0.05 * 0.6)).padStart(2,'0')} - ${Math.round(duration * 0.25)}:${String(Math.round(duration * 0.25 % 1 * 0.6)).padStart(2,'0')}】
+  - 核心内容：（至少 3 个要点，每个要点要有具体数据和案例）
+  - 主讲动作：
+  - PPT/屏幕：
+  - 过渡语：
+
+### ⚡ 环节二：核心玩法/技术/趋势（${Math.round(duration * 0.25)} 分钟）
+
+**目标**：传递干货，展示深度
+
+- 【${Math.round(duration * 0.25)}:${String(Math.round(duration * 0.25 % 1 * 0.6)).padStart(2,'0')} - ${Math.round(duration * 0.5)}:${String(Math.round(duration * 0.5 % 1 * 0.6)).padStart(2,'0')}】
+  - 核心内容：（至少 4 个干货点，包含真实案例/代码示例/数据支撑）
+  - 实操演示：（如果有）
+  - 常见误区：（至少 2 个）
+  - 过渡语：
+
+### 🎯 环节三：实战案例/落地应用（${Math.round(duration * 0.2)} 分钟）
+
+**目标**：增强说服力，建立信任
+
+- 【${Math.round(duration * 0.5)}:${String(Math.round(duration * 0.5 % 1 * 0.6)).padStart(2,'0')} - ${Math.round(duration * 0.7)}:${String(Math.round(duration * 0.7 % 1 * 0.6)).padStart(2,'0')}】
+  - 案例 1：（背景 → 挑战 → 方案 → 成果，数据量化）
+  - 案例 2：
+  - 案例 3：（可选）
+
+### 🎤 互动环节（${Math.round(duration * 0.1)} 分钟）
+
+**目标**：活跃气氛，收集需求
+
+- 【${Math.round(duration * 0.7)}:${String(Math.round(duration * 0.7 % 1 * 0.6)).padStart(2,'0')} - ${Math.round(duration * 0.8)}:${String(Math.round(duration * 0.8 % 1 * 0.6)).padStart(2,'0')}】
+  - 互动 1：（类型：投票/弹幕/抽奖/问答）
+    - 问题：
+    - 选项：
+    - 预计参与率：
+  - 互动 2：
+  - 话题预告：（为 Q&A 做铺垫）
+
+### 🙋 结尾 & Q&A（${Math.round(duration * 0.2)} 分钟）
+
+**目标**：收尾有力，促进转化
+
+- 【${Math.round(duration * 0.8)}:${String(Math.round(duration * 0.8 % 1 * 0.6)).padStart(2,'0')} - ${duration}:00】
+  - 回顾 3 个核心要点：
+  - 下一步行动号召（CTA）：
+  - 直播后内容承诺：
+  - Q&A 常见问题预判（3 条）：
+
+---
+
+## 四、预设互动问题清单
+
+在直播开始前，准备好以下问题的答案：
+
+### Q&A 储备（至少 8 条）
+
+| 序号 | 问题 | 预设答案要点 | 回答时长 |
+|------|------|------------|---------|
+| 1 | | | ${Math.round(duration * 0.02)} 分钟 |
+| 2 | | | |
+| 3 | | | |
+| 4 | | | |
+| 5 | | | |
+| 6 | | | |
+| 7 | | | |
+| 8 | | | |
+
+### 弹幕引导问题（3 条，适合在直播中主动引导）
 1.
 2.
 3.
 
 ---
 
-## 📋 直播大纲
+## 五、预热推广方案
 
-### 开场（${Math.round(duration * 0.05)}min）
--
+### 推广节奏
 
-### 环节一（${Math.round(duration * 0.3)}min）
--
+| 时间 | 渠道 | 内容 | 负责人 |
+|------|------|------|--------|
+| 直播前 7 天 | 公众号 | | |
+| 直播前 3 天 | 社群 | | |
+| 直播前 1 天 | 朋友圈/微博 | | |
+| 直播当天 | 全渠道 | | |
 
-### 环节二（${Math.round(duration * 0.3)}min）
--
+### 预热文案
 
-### 环节三（${Math.round(duration * 0.15)}min）
--
+#### 📢 公众号推文（250 字）
+（标题要有悬念，正文包含：痛点引入 → 主题价值 → 嘉宾介绍 → 直播亮点 → 行动号召）
 
-### 互动环节（${Math.round(duration * 0.1)}min）
--
+#### 💬 社群推广文案（80 字）
+（简短有力，包含：主题 + 亮点 + 参与方式 + 时间）
 
-### 结尾 & Q&A（${Math.round(duration * 0.1)}min）
--
+#### 🐦 Twitter/X 推文（140 字，英文版）
+（面向国际受众，突出技术价值和嘉宾背书）
+
+#### 📱 朋友圈/小红书文案
+（适合朋友圈格式，简洁有冲击力）
+
+#### ✉️ 私聊邀约模板
+（发给 KOL/嘉宾/高潜用户，个性化版本）
 
 ---
 
-## 💬 预设互动问题（5条）
+## 六、嘉宾邀约方案
+
+### 目标嘉宾画像
+
+| 项目 | 要求 |
+|------|------|
+| 嘉宾类型 | |
+| 必备标签 | |
+| 最佳来源 | |
+| 邀请难度 | 高/中/低 |
+
+### 嘉宾邀请话术模板
+
+**版本 A - 初次邀请（邮件/微信）**：
+尊敬的 [嘉宾姓名]：
+
+您好！
+
+我是 [你的名字]，来自 [公司/平台]。
+
+[一句话介绍自己和平台背景，调性要符合 InfoQ 的科技受众]
+
+我们正在策划一场主题为「${topic}」的直播，预计观看人数 [X]，观众以 [受众描述] 为主。
+
+我们非常欣赏您在 [具体成就/作品]，相信您的分享会为观众带来极大价值。
+
+诚挚邀请您作为 [主讲嘉宾/对谈嘉宾] 参与本次直播。
+
+直播时间：[具体时间]，预计时长 ${duration} 分钟，在 [平台] 进行。
+
+如您感兴趣，我可以发送详细的策划方案供您参考。期待您的回复！
+
+**版本 B - 跟进邮件**（3 天未回复时）：
+（跟进内容，保持热情但不强迫）
+
+---
+
+## 七、复盘指标与数据追踪
+
+### 直播前准备
+
+- [ ] 确认所有推广渠道已发布
+- [ ] 确认嘉宾设备正常（电脑/网络/麦克风）
+- [ ] 准备备用网络热点
+- [ ] 测试直播推流
+- [ ] 准备 Q&A 文档
+- [ ] 设定直播提醒闹钟
+
+### 直播中实时监控
+
+| 指标 | 关注时间点 | 预警阈值 | 应对措施 |
+|------|-----------|---------|---------|
+| 在线人数 | 每 10 分钟 | < 50 人 | 增强互动引导 |
+| 弹幕数量 | 每 15 分钟 | < 10 条/15min | 主动提问 |
+| 评论情感 | 全程 | 负面过多 | 转移话题 |
+| 技术故障 | 全程 | 卡顿 > 30s | 切换备用方案 |
+
+### 直播后复盘模板
+
+| 维度 | 数据 | 分析 | 改进 |
+|------|------|------|------|
+| 观看人数峰值 | | | |
+| 平均观看时长 | | | |
+| 总观看时长 | | | |
+| 互动率（评论/点赞） | | | |
+| 新增关注 | | | |
+| 社群引流人数 | | | |
+| 直播收入（如有） | | | |
+| 最高互动环节 | | | |
+
+---
+
+## 八、注意事项与避坑指南
+
+### ⚠️ 常见失误（提前规避）
+
+1. **时间把控**：每个环节预留 1 分钟缓冲，避免超时
+2. **互动冷场**：开场前 5 分钟必须有一次互动，不能空场
+3. **技术故障**：提前 30 分钟测试，备用方案随时可切换
+4. **嘉宾跑题**：设置明确的环节边界，过渡语提前写好
+5. **结束仓促**：结尾至少预留 5 分钟做 CTA 和感谢
+
+### 💡 提升直播质量的技巧
+
 1.
 2.
 3.
-4.
-5.
 
 ---
 
-## 📢 预热文案
+## 九、后续内容规划
 
-### 公众号版本（150字）
--
-
-### 社群推广版本（80字）
--
-
-### Twitter/X 版本（140字）
--
+| 内容形式 | 产出时间 | 标题建议 | 目标数据 |
+|---------|---------|---------|---------|
+| 直播文字回顾 | 直播后 24h | | 阅读量 |
+| 直播精华剪辑（短视频） | 直播后 48h | | 转发量 |
+| 直播精华 PPT | 直播后 3 天 | | 下载量 |
+| 直播金句海报 | 直播后 24h | | 收藏量 |
 
 ---
 
-## 📧 嘉宾邀约文案模板
-尊敬的[嘉宾姓名]：
-
-您好！我是[你的名字]，来自[公司/平台]。
-
-我们正在策划一场主题为「${topic}」的直播，希望能邀请您作为嘉宾参与...
-
----
-
-## 📊 复盘指标清单
-- 观看人数峰值：
-- 平均观看时长：
-- 互动率（评论/点赞）：
-- 转化率（扫码/注册）：
-- 社媒转发数：
-
----
-*由 AI 直播策划工具生成 | InfoQ*`;
+*由 AI 直播策划助手生成 | InfoQ*
+*策划时间：${today} | 如有疑问请联系策划团队*`;
 
       try {
         const response = await fetch(API_URL, {
@@ -214,27 +397,29 @@
           body: JSON.stringify({
             model: 'MiniMax-Text-01',
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-            max_tokens: 2500
+            temperature: 0.75,
+            max_tokens: 4000
           })
         });
 
         const data = await response.json();
         if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
           let content = data.choices[0].message.content;
-          content = content.replace(/^```markdown\s*/i, '').replace(/\s*```$/, '');
+          content = content.replace(/^```markdown\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
           planContent.textContent = content;
           resultDiv.classList.add('show');
         } else {
-          planContent.innerHTML = '<div class="error-msg">😕 生成失败了，错误信息：' + (data.base_resp?.status_msg || JSON.stringify(data)) + '</div>';
+          const errMsg = data.base_resp?.status_msg || JSON.stringify(data).slice(0, 100);
+          planContent.innerHTML = '<div class="error-msg">😕 生成失败了，错误：' + errMsg + '</div>';
           resultDiv.classList.add('show');
         }
       } catch (err) {
-        planContent.innerHTML = '<div class="error-msg">😕 网络错误，请检查网络后重试（错误：' + err.message + '）</div>';
+        planContent.innerHTML = '<div class="error-msg">😕 网络错误：' + err.message + '，请检查网络后重试</div>';
         resultDiv.classList.add('show');
       } finally {
         submitBtn.disabled = false;
-        btnText.textContent = '✨ 开始生成策划方案';
+        btnText.textContent = '✨ 再次生成策划方案';
+        loadingTip.style.display = 'none';
       }
     });
 
