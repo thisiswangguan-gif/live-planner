@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎙️ AI 直播策划助手</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    header { text-align: center; margin-bottom: 48px; }
+    header .emoji { font-size: 48px; margin-bottom: 12px; }
+    header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+    header p { color: #888; font-size: 14px; }
+    .card { background: #13131a; border: 1px solid #222230; border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 13px; color: #888; margin-bottom: 8px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; background: #0a0a0f; border: 1px solid #222230; border-radius: 10px; padding: 12px 16px; color: #e0e0e0; font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #667eea; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #result { display: none; }
+    #result.show { display: block; }
+    .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .result-header h2 { font-size: 16px; color: #888; }
+    .btn-copy { padding: 6px 14px; background: #222230; border: 1px solid #333; border-radius: 6px; color: #aaa; font-size: 12px; cursor: pointer; }
+    .btn-copy:hover { background: #2a2a3a; color: #fff; }
+    #plan-content { background: #0a0a0f; border: 1px solid #222230; border-radius: 10px; padding: 24px; font-size: 14px; line-height: 1.8; color: #ccc; max-height: 600px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+    #plan-content h1 { font-size: 20px; color: #fff; margin-bottom: 16px; }
+    #plan-content h2 { font-size: 16px; color: #667eea; margin: 20px 0 10px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+    #plan-content h3 { font-size: 14px; color: #a0a0c0; margin: 12px 0 6px; }
+    #plan-content ul { padding-left: 20px; }
+    .error-msg { background: #1a0a0a; border: 1px solid #3a1010; border-radius: 10px; padding: 16px; color: #e88; text-align: center; }
+    footer { text-align: center; color: #444; font-size: 12px; margin-top: 40px; }
+    footer a { color: #667eea; text-decoration: none; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .card { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="emoji">🎙️</div>
+      <h1>AI 直播策划助手</h1>
+      <p>输入主题，AI 帮你生成完整直播策划方案</p>
+    </header>
+
+    <div class="card">
+      <form id="plan-form">
+        <div class="form-group">
+          <label>直播主题 *</label>
+          <input type="text" id="topic" placeholder="例如：AI Agent 如何重塑内容创作" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>目标受众</label>
+            <input type="text" id="audience" placeholder="例如：技术创业者、开发者">
+          </div>
+          <div class="form-group">
+            <label>直播时长</label>
+            <select id="duration">
+              <option value="60">60 分钟</option>
+              <option value="90" selected>90 分钟</option>
+              <option value="120">120 分钟</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>特别要求（可选）</label>
+          <textarea id="focus" placeholder="例如：重点讲实操案例、要有观众连麦环节"></textarea>
+        </div>
+        <button type="submit" class="btn" id="submit-btn">
+          <span id="btn-text">✨ 开始生成策划方案</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="card" id="result">
+      <div class="result-header">
+        <h2>📋 策划方案</h2>
+        <button class="btn-copy" id="copy-btn">📋 复制全文</button>
+      </div>
+      <div id="plan-content"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = 'sk-api-mMCMRX4hymGuq92xjmt-wTf_B3jbsXkzHagVocr4a-Cj7nvUGeOP9nGhuWKJBWvyxaCK8Aq8PWJuP0o7M_WrelIBkpMGgrTXonBFNA9rKrYc63wSNOL3iNM';
+    const API_URL = 'https://api.minimax.chat/v1/text/chatcompletion_v2';
+
+    const form = document.getElementById('plan-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const resultDiv = document.getElementById('result');
+    const planContent = document.getElementById('plan-content');
+    const copyBtn = document.getElementById('copy-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const topic = document.getElementById('topic').value.trim();
+      const audience = document.getElementById('audience').value.trim();
+      const duration = document.getElementById('duration').value;
+      const focus = document.getElementById('focus').value.trim();
+
+      if (!topic) { alert('请输入直播主题'); return; }
+
+      submitBtn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span>策划中，请稍候...';
+      resultDiv.classList.remove('show');
+
+      const prompt = `你是一位资深的直播策划专家，擅长为主播和运营团队策划高质量的技术直播。
+
+请为以下直播生成一份完整的策划方案：
+
+**主题**：${topic}
+**目标受众**：${audience || '技术从业者、开发者、AI 爱好者'}
+**直播时长**：${duration} 分钟
+**特别要求**：${focus || '无'}
+
+请生成以下内容，用 Markdown 格式返回（不要用代码块包裹，直接输出 Markdown）：
+
+# 🎙️ 直播策划方案
+
+## 📌 基本信息
+- **主题**：${topic}
+- **目标受众**：${audience || '技术从业者、开发者、AI 爱好者'}
+- **直播时长**：${duration} 分钟
+- **策划时间**：${new Date().toLocaleDateString('zh-CN')}
+
+---
+
+## 🎯 直播目标
+1.
+2.
+3.
+
+---
+
+## 📋 直播大纲
+
+### 开场（${Math.round(duration * 0.05)}min）
+-
+
+### 环节一（${Math.round(duration * 0.3)}min）
+-
+
+### 环节二（${Math.round(duration * 0.3)}min）
+-
+
+### 环节三（${Math.round(duration * 0.15)}min）
+-
+
+### 互动环节（${Math.round(duration * 0.1)}min）
+-
+
+### 结尾 & Q&A（${Math.round(duration * 0.1)}min）
+-
+
+---
+
+## 💬 预设互动问题（5条）
+1.
+2.
+3.
+4.
+5.
+
+---
+
+## 📢 预热文案
+
+### 公众号版本（150字）
+-
+
+### 社群推广版本（80字）
+-
+
+### Twitter/X 版本（140字）
+-
+
+---
+
+## 📧 嘉宾邀约文案模板
+尊敬的[嘉宾姓名]：
+
+您好！我是[你的名字]，来自[公司/平台]。
+
+我们正在策划一场主题为「${topic}」的直播，希望能邀请您作为嘉宾参与...
+
+---
+
+## 📊 复盘指标清单
+- 观看人数峰值：
+- 平均观看时长：
+- 互动率（评论/点赞）：
+- 转化率（扫码/注册）：
+- 社媒转发数：
+
+---
+*由 AI 直播策划工具生成 | InfoQ*`;
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'MiniMax-Text-01',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            max_tokens: 2500
+          })
+        });
+
+        const data = await response.json();
+        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+          let content = data.choices[0].message.content;
+          content = content.replace(/^```markdown\s*/i, '').replace(/\s*```$/, '');
+          planContent.textContent = content;
+          resultDiv.classList.add('show');
+        } else {
+          planContent.innerHTML = '<div class="error-msg">😕 生成失败了，错误信息：' + (data.base_resp?.status_msg || JSON.stringify(data)) + '</div>';
+          resultDiv.classList.add('show');
+        }
+      } catch (err) {
+        planContent.innerHTML = '<div class="error-msg">😕 网络错误，请检查网络后重试（错误：' + err.message + '）</div>';
+        resultDiv.classList.add('show');
+      } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = '✨ 开始生成策划方案';
+      }
+    });
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(planContent.innerText).then(() => {
+        copyBtn.textContent = '✅ 已复制';
+        setTimeout(() => { copyBtn.textContent = '📋 复制全文'; }, 2000);
+      });
+    });
+  </script>
+</body>
+</html>
